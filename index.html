@@ -12,33 +12,47 @@
 <meta name="theme-color" content="#F4F3EF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
 <style>
-  :root { --bg: #F4F3EF; --ink: #1B1B1F; --muted: #6B6B73; --accent: #1E5B47; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #111113; --ink: #F2F1EE; --muted: #9A9AA3; --accent: #7FC8A9; } }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  :root { --bg: #F4F3EF; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111113; } }
+  html, body { margin: 0; height: 100%; background: var(--bg); }
   iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
-  #secours { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
-    padding: 24px; text-align: center; background: var(--bg); }
-  #secours.visible { display: flex; }
-  #secours p { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
-  #secours a { display: inline-block; padding: 12px 20px; border-radius: 12px; background: var(--accent);
-    color: var(--bg); text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
-<iframe id="app" title="Budget" allow="clipboard-write"
-  src="https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec"></iframe>
-<div id="secours">
-  <div>
-    <p>L'app met du temps à s'ouvrir.<br>Si ta connexion Google a expiré, reconnecte-toi une fois dans Chrome.</p>
-    <a href="https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec" target="_blank" rel="noopener">Ouvrir dans Chrome</a>
-  </div>
-</div>
+<iframe id="app" title="Budget" allow="clipboard-write"></iframe>
 <script>
-  // Si le cadre ne se charge pas (connexion Google expirée, réseau), on propose d'ouvrir l'app dans Chrome.
-  var charge = false;
-  document.getElementById('app').addEventListener('load', function () { charge = true; });
-  setTimeout(function () { if (!charge) document.getElementById('secours').classList.add('visible'); }, 20000);
+  // Coquille v3 : affiche le budget en plein écran dans un cadre quand le téléphone le permet,
+  // sinon ouvre l'app normale. Le budget envoie « budget-pret » quand il est bien affiché (app commune v26).
+  var APP = 'https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec';
+  var CLE = 'budget-cadre';            // 'ok' ou 'ko:<date>' : ce qui s'est passé la dernière fois sur ce téléphone
+  var SEPT_JOURS = 7 * 24 * 3600 * 1000;
+  function lire() { try { return localStorage.getItem(CLE) || ''; } catch (e) { return ''; } }
+  function ecrire(v) { try { localStorage.setItem(CLE, v); } catch (e) {} }
+  function appNormale() { location.replace(APP); }
+
+  var avant = lire();
+  var ko = /^ko:(\d+)$/.exec(avant);
+  // Navigateurs qui bloquent la connexion Google dans un cadre (iPhone, Firefox) : app normale tout de suite
+  var bloque = /iPhone|iPad|iPod|Firefox|FxiOS/.test(navigator.userAgent);
+
+  if (bloque || (ko && Date.now() - Number(ko[1]) < SEPT_JOURS)) {
+    appNormale();                      // le cadre n'a pas marché récemment ici : pas d'attente inutile
+  } else {
+    var pret = false;
+    addEventListener('message', function (e) {
+      var hote = '';
+      try { hote = new URL(e.origin).hostname; } catch (err) {}
+      if (e.data === 'budget-pret' && /\.googleusercontent\.com$/.test(hote)) { pret = true; ecrire('ok'); }
+    });
+    document.getElementById('app').src = APP;
+    // Sans signal : app normale. On ne retient l'échec que si le cadre n'a jamais marché ici
+    // (une fois qui a déjà marché, c'est sans doute le réseau : on réessaiera le cadre la prochaine fois).
+    setTimeout(function () {
+      if (pret) return;
+      if (avant !== 'ok') ecrire('ko:' + Date.now());
+      appNormale();
+    }, avant === 'ok' ? 20000 : 10000);
+  }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=2').catch(function () {});
 </script>
 </body>
