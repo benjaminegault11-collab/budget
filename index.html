@@ -27,11 +27,11 @@
 </head>
 <body>
 <iframe id="app" title="Budget" allow="clipboard-write"
-  src="https://script.google.com/macros/s/AKfycbz1vrg15jd2WNOx2wkv5olaHliuyyaAbO9MZ5lwwxhhRqCw0BhE2hmvi4j3eM_e47M1/exec"></iframe>
+  src="https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec"></iframe>
 <div id="secours">
   <div>
     <p>L'app met du temps à s'ouvrir.<br>Si ta connexion Google a expiré, reconnecte-toi une fois dans Chrome.</p>
-    <a href="https://script.google.com/macros/s/AKfycbz1vrg15jd2WNOx2wkv5olaHliuyyaAbO9MZ5lwwxhhRqCw0BhE2hmvi4j3eM_e47M1/exec" target="_blank" rel="noopener">Ouvrir dans Chrome</a>
+    <a href="https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec" target="_blank" rel="noopener">Ouvrir dans Chrome</a>
   </div>
 </div>
 <script>
@@ -39,7 +39,7 @@
   var charge = false;
   document.getElementById('app').addEventListener('load', function () { charge = true; });
   setTimeout(function () { if (!charge) document.getElementById('secours').classList.add('visible'); }, 20000);
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=2').catch(function () {});
 </script>
 </body>
 </html>
