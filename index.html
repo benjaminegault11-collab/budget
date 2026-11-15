@@ -21,7 +21,7 @@
 <body>
 <iframe id="app" title="Budget" allow="clipboard-write"></iframe>
 <script>
-  // Coquille v3 : affiche le budget en plein écran dans un cadre quand le téléphone le permet,
+  // Coquille v4 : affiche le budget en plein écran dans un cadre quand le téléphone le permet,
   // sinon ouvre l'app normale. Le budget envoie « budget-pret » quand il est bien affiché (app commune v26).
   var APP = 'https://script.google.com/macros/s/AKfycbwe2K4BXdDEDY4ZTRaPoJpD7-Xg6Q8blUshssnu8D82pUsd2vMHM3X0zRsIadhJK6U/exec';
   var CLE = 'budget-cadre';            // 'ok' ou 'ko:<date>' : ce qui s'est passé la dernière fois sur ce téléphone
@@ -44,14 +44,19 @@
       try { hote = new URL(e.origin).hostname; } catch (err) {}
       if (e.data === 'budget-pret' && /\.googleusercontent\.com$/.test(hote)) { pret = true; ecrire('ok'); }
     });
-    document.getElementById('app').src = APP;
-    // Sans signal : app normale. On ne retient l'échec que si le cadre n'a jamais marché ici
-    // (une fois qui a déjà marché, c'est sans doute le réseau : on réessaiera le cadre la prochaine fois).
-    setTimeout(function () {
-      if (pret) return;
-      if (avant !== 'ok') ecrire('ko:' + Date.now());
+    // Google met parfois 10 s ou plus à répondre : on attend la fin du chargement du cadre,
+    // puis on laisse 6 s au budget pour envoyer son signal. Sans signal : app normale.
+    var cadre = document.getElementById('app');
+    var fini = false;
+    function echec() {
+      if (pret || fini) return;
+      fini = true;
+      if (avant !== 'ok') ecrire('ko:' + Date.now());   // on ne retient l'échec que si le cadre n'a jamais marché ici
       appNormale();
-    }, avant === 'ok' ? 20000 : 10000);
+    }
+    cadre.addEventListener('load', function () { setTimeout(echec, 6000); });
+    cadre.src = APP;
+    setTimeout(echec, 45000);          // filet de sécurité si le cadre ne finit jamais de charger
   }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=2').catch(function () {});
 </script>
